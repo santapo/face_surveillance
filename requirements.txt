@@ -1,0 +1,17 @@
+--extra-index-url https://download.pytorch.org/whl/cu116
+
+torch==1.12.0+cu116
+torchvision==0.13.0+cu116
+tensorflow-gpu
+
+Pillow
+numpy
+opencv-python
+
+deepface
+
+yoloface
+retinaface
+
+deep-sort-realtime
+simple-online-realtime-tracking
