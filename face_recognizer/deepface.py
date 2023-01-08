@@ -38,8 +38,8 @@ MODELS = {
 class DeepFaceRecognizer:
     def __init__(
         self,
-        model_name: str,
-        face_db_path: str,
+        model_name: str = "ArcFace",
+        face_db_path: str = "./face_db/",
     ):
         self.model_name = model_name
         if os.path.isdir(face_db_path) == True:
@@ -61,9 +61,9 @@ class DeepFaceRecognizer:
         file_name = file_name.replace("-", "_").lower()
 
         if os.path.exists(self.face_db_path+"/"+file_name):
-            logger.wanr("Representations for images in ",self.face_db_path," folder were previously stored in ", file_name, ". \
-                        If you added new instances after this file creation, then please delete this file and call find function again. \
-                        It will create it again.")
+            logger.warn(f"""Representations for images in {self.face_db_path} folder were previously stored in {file_name}.
+                        If you added new instances after this file creation, then please delete this file and call find function again.
+                        It will create it again.""")
             f = open(self.face_db_path+'/'+file_name, 'rb')
             self.representations = pickle.load(f)
             logger.info("There are ", len(self.representations)," representations found in ",file_name)
@@ -79,7 +79,7 @@ class DeepFaceRecognizer:
                 raise ValueError("There is no image in ", self.face_db_path," folder! Validate .jpg or .png files exist in this path.")
 
             self.representations = []
-            pbar = tqdm(range(0,len(employees)), desc='Finding representations', disable = prog_bar)
+            pbar = tqdm(range(0,len(employees)), desc='Finding representations')
             for index in pbar:
                 employee = employees[index]
                 instance = []
@@ -107,8 +107,8 @@ class DeepFaceRecognizer:
             # Then pad the other side to the target size by adding black pixels
             diff_0 = target_size[0] - face_image.shape[0]
             diff_1 = target_size[1] - face_image.shape[1]
-  
-            face_image = np.pad(face_image, ((diff_0 // 2, diff_0 - diff_0 // 2), (diff_1 // 2, diff_1 - diff_1 // 2)), 'constant')
+
+            face_image = np.pad(face_image, ((diff_0 // 2, diff_0 - diff_0 // 2), (diff_1 // 2, diff_1 - diff_1 // 2), (0, 0)), 'constant')
 
         # double check whether the face_image has target_size
         if face_image.shape[0:2] != target_size:
@@ -118,6 +118,16 @@ class DeepFaceRecognizer:
         image_pixels = np.expand_dims(image_pixels, axis = 0)
         image_pixels /= 255 #normalize input in [0, 1]
         return image_pixels
+
+    @staticmethod
+    def get_identity_names(resp_obj):
+        identity_names = []
+        for obj in resp_obj:
+            identity = obj["identity"].tolist()
+            identity = [item.split("/")[-2] for item in identity]
+            identity = max(identity, key=identity.count)
+            identity_names.append(identity)
+        return identity_names
 
     def represent(self, face_image: np.ndarray) -> np.ndarray:
         input_shape_x, input_shape_y = functions.find_input_shape(self.model)
@@ -130,7 +140,7 @@ class DeepFaceRecognizer:
 
     def find(
         self,
-        face_images: np.ndarray,
+        face_images: List[np.ndarray],
         prog_bar: bool = True,
     ) -> List[np.ndarray]:
 
@@ -147,18 +157,16 @@ class DeepFaceRecognizer:
 
             distances = []
             for index, instance in df.iterrows():
-                source_representation = instance["representation"]
+                source_representation = instance["%s_representation" % (self.model_name)]
                 distance = dst.findCosineDistance(source_representation, target_representation)
                 distances.append(distance)
 
-            # df["%s_%s" % (j, k)] = distances
-
-            # threshold = dst.findThreshold(j, k)
-            # df = df.drop(columns = ["%s_representation" % (j)])
-            # df = df[df["%s_%s" % (j, k)] <= threshold]
-
-            # df = df.sort_values(by = ["%s_%s" % (j, k)], ascending=True).reset_index(drop=True)
-            # resp_obj.append(df)
+            df["%s_%s" % (self.model_name, "cosine")] = distances
+            threshold = dst.findThreshold(self.model_name, "cosine")
+            df = df.drop(columns = ["%s_representation" % (self.model_name)])
+            df = df[df["%s_%s" % (self.model_name, "cosine")] <= threshold]
+            df = df.sort_values(by = ["%s_%s" % (self.model_name, "cosine")], ascending=True).reset_index(drop=True)
+            resp_obj.append(df)
             df = df_base.copy() #restore df for the next iteration
 
         toc = time.time()
