@@ -1,0 +1,5 @@
+outs:
+- md5: 62a215b7fa2d5c66f6a95c70a5d6aa36.dir
+  size: 695497
+  nfiles: 11
+  path: face_db

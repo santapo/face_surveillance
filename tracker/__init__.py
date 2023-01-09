@@ -1,6 +1,7 @@
+from .sort import Sort
 
 TRACKER = {
-    "sort": "",
+    "sort": Sort,
     "deepsort": ""
 }
 

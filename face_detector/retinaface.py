@@ -1,11 +1,11 @@
-from . import AbstractFaceDetector
-from retinaface import RetinaFace
-from retinaface.commons import preprocess, postprocess
-from retinaface.model import retinaface_model
 from typing import List
-import tensorflow as tf
-import numpy as np
 
+import numpy as np
+import tensorflow as tf
+from retinaface.commons import postprocess, preprocess
+from retinaface.model import retinaface_model
+
+from .base_detector import AbstractFaceDetector
 
 nms_threshold = 0.4; decay4 = 0.5
 _feat_stride_fpn = [32, 16, 8]
@@ -30,7 +30,7 @@ class RetinaFace(AbstractFaceDetector):
         self,
         image: np.ndarray,
         threshold: float =0.9,
-        allow_upscaling: bool = True
+        allow_upscaling: bool = True,
     ) -> List[np.ndarray]:
 
         proposals_list = []
@@ -129,7 +129,7 @@ class RetinaFace(AbstractFaceDetector):
             resp[label]["landmarks"]["mouth_right"] = list(landmarks[idx][3])
             resp[label]["landmarks"]["mouth_left"] = list(landmarks[idx][4])
 
-        face_bboxs = [v["facial_area"] + v["score"] for k, v in resp.items()]
+        face_bboxs = [v["facial_area"] + [v["score"]] for k, v in resp.items()]
         return face_bboxs
 
     def extract_face(

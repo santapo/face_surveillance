@@ -1,0 +1,4 @@
+[core]
+    remote = po
+['remote "po"']
+    url = gdrive://1yDlVEZwdG6zENqNSh0CuWYT9nzJZSZqp

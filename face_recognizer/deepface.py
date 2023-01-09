@@ -124,6 +124,9 @@ class DeepFaceRecognizer:
         identity_names = []
         for obj in resp_obj:
             identity = obj["identity"].tolist()
+            if len(identity) == 0:
+                identity_names.append("unkown")
+                continue
             identity = [item.split("/")[-2] for item in identity]
             identity = max(identity, key=identity.count)
             identity_names.append(identity)
@@ -171,7 +174,4 @@ class DeepFaceRecognizer:
 
         toc = time.time()
         logger.info("find function lasts ",toc-tic," seconds")
-
-        if len(resp_obj) == 1:
-            return resp_obj[0]
         return resp_obj
